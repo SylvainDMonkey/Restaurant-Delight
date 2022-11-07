@@ -1,25 +1,49 @@
-from django.contrib.auth import authenticate, login
+from django.contrib import messages
+from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.decorators import login_required
+from django.contrib.auth.forms import AuthenticationForm
 from django.contrib.auth.mixins import LoginRequiredMixin
-from django.http import HttpResponse
 from django.shortcuts import render, redirect
 
-def login_view(request):
-    context = {
-    "login_view": "active"
-    }
+from .forms import NewUserForm
+
+
+def sign_up_view(request):
     if request.method == 'POST':
-        username = request.POST['username']
-        password = request.POST['password']
-        user = authenticate(request, username=username, password=password)
-        if user is not None:
+        form = NewUserForm(request.POST)
+        if form.is_valid():
+            user = form.save()
             login(request, user)
-            return redirect('inventory:home')
-        else:
-            return HttpResponse('Erreur message')
-    return render(request, 'registration/login.html', context)
+            messages.success(request, "Registration successful.")
+            return redirect('inventory:login')
+        messages.error(request, "Unsuccesful information. Invalid information")
+    form = NewUserForm()
+    return render(request, 'registration/signup.html', context={"register_form":form})   
 
 
+def login_view(request):
+    if request.method == "POST":
+        form = AuthenticationForm(request, data=request.POST)
+        if form.is_valid():
+            username = form.cleaned_data.get('username')
+            password = form.cleaned_data.get('password')
+            user = authenticate(username=username, password= password)
+            if user is not None:
+                login(request, user)
+                messages.info(request, f"You are now logged in as {username}.")
+                return redirect ('inventory:home')
+            else:
+                messages.error(request, "Invalid username or password")
+    else:
+        messages.error(request, "Invalid username or password")
+    form = AuthenticationForm()
+    return render(request, 'registration/login.html', context={"login_form":form})
+
+def logout_view(request):
+    logout(request)
+    return redirect('inventory:login')
+
+
+@login_required
 def home(request):
-    context = {"name": request.user}
-    return render(request, "inventory/home.html", context)
+    return render(request, "inventory/home.html")

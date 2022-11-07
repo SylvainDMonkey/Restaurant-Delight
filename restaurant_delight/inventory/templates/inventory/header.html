@@ -12,6 +12,11 @@
         <li>
           <a href="#">Purchase</a>
         </li>
+        {% if user.username is not None %}
+        <li>
+          <a href="{% url 'inventory:logout' %}">Log out?</a>
+        </li>
+        {% endif %}
       </ul>
     </nav>
   </div>
